@@ -95,21 +95,66 @@ def add_recipe():
     session.close()
     print(f"\nRecipe '{name}' added successfully!")
 
+def delete_recipe():
+    """Delete a recipe from the database."""
+    session = Session()
+
+    # Show available recipes
+    print("\n=== AVAILABLE RECIPES ===")
+    recipes = session.query(Recipe).all()
+    if not recipes:
+        print("No recipes available to delete.")
+        session.close()
+        return
+
+    for recipe in recipes:
+        print(f"ID: {recipe.id}, Name: {recipe.name}")
+
+    # Get recipe ID to delete
+    try:
+        recipe_id = int(input("\nEnter ID of recipe to delete: "))
+        recipe = session.query(Recipe).filter_by(id=recipe_id).first()
+
+        if not recipe:
+            print(f"Recipe with ID {recipe_id} not found.")
+            session.close()
+            return
+
+        # Delete associated recipe ingredients first
+        session.query(RecipeIngredient).filter_by(recipe_id=recipe_id).delete()
+
+        # Delete the recipe
+        recipe_name = recipe.name
+        session.delete(recipe)
+        session.commit()
+        print(f"Recipe '{recipe_name}' deleted successfully!")
+
+    except ValueError:
+        print("Invalid input. Please enter a valid recipe ID.")
+    except Exception as e:
+        print(f"Error deleting recipe: {e}")
+        session.rollback()
+    finally:
+        session.close()
+
 def main_menu():
     """Display a menu to choose between viewing data and adding a recipe."""
     while True:
         print("\n=== CULINARY COMPASS MENU ===")
         print("1. View all data")
         print("2. Add a new recipe")
-        print("3. Exit")
-        
-        choice = input("\nEnter your choice (1-3): ")
-        
+        print("3. Delete a recipe")
+        print("4. Exit")
+
+        choice = input("\nEnter your choice (1-4): ")
+
         if choice == "1":
             show_all_data()
         elif choice == "2":
             add_recipe()
         elif choice == "3":
+            delete_recipe()
+        elif choice == "4":
             print("Exiting program. Goodbye!")
             break
         else:
