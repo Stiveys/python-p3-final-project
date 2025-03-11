@@ -137,6 +137,83 @@ def delete_recipe():
     finally:
         session.close()
 
+def show_categories():
+    """Display only the categories from the database."""
+    session = Session()
+
+    print("\n=== CATEGORIES ===")
+    categories = session.query(Category).all()
+    if not categories:
+        print("No categories found in the database.")
+    else:
+        for category in categories:
+            print(f"ID: {category.id}, Name: {category.name}")
+
+            # Optionally show recipes in this category
+            recipes = session.query(Recipe).filter_by(category_id=category.id).all()
+            if recipes:
+                print(f"  Recipes in this category:")
+                for recipe in recipes:
+                    print(f"  - {recipe.name}")
+            print()
+
+    session.close()
+
+def show_ingredients():
+    """Display only the ingredients from the database."""
+    session = Session()
+
+    print("\n=== INGREDIENTS ===")
+    ingredients = session.query(Ingredient).all()
+    if not ingredients:
+        print("No ingredients found in the database.")
+    else:
+        for ingredient in ingredients:
+            print(f"ID: {ingredient.id}, Name: {ingredient.name}")
+
+            # Show recipes that use this ingredient
+            recipe_ingredients = session.query(RecipeIngredient).filter_by(ingredient_id=ingredient.id).all()
+            if recipe_ingredients:
+                print(f"  Used in recipes:")
+                for ri in recipe_ingredients:
+                    recipe = session.query(Recipe).filter_by(id=ri.recipe_id).first()
+                    if recipe:
+                        print(f"  - {recipe.name} ({ri.quantity} {ri.unit})")
+            print()
+
+    session.close()
+
+def add_category():
+    """Add a new category to the database."""
+    session = Session()
+
+    # Show existing categories
+    print("\n=== EXISTING CATEGORIES ===")
+    categories = session.query(Category).all()
+    for category in categories:
+        print(f"ID: {category.id}, Name: {category.name}")
+
+    # Get new category name
+    name = input("\nEnter new category name: ")
+
+    # Check if category already exists
+    existing = session.query(Category).filter(Category.name.ilike(name)).first()
+    if existing:
+        print(f"Category '{name}' already exists with ID: {existing.id}")
+        session.close()
+        return
+
+    # Create new category
+    try:
+        category = Category.create(session, name=name)
+        print(f"Category '{name}' added successfully with ID: {category.id}")
+    except Exception as e:
+        print(f"Error adding category: {e}")
+        session.rollback()
+    finally:
+        session.close()
+
+# Update main_menu function to include the new option
 def main_menu():
     """Display a menu to choose between viewing data and adding a recipe."""
     while True:
@@ -144,9 +221,12 @@ def main_menu():
         print("1. View all data")
         print("2. Add a new recipe")
         print("3. Delete a recipe")
-        print("4. Exit")
+        print("4. View categories only")
+        print("5. View ingredients only")
+        print("6. Add a new category")
+        print("7. Exit")
 
-        choice = input("\nEnter your choice (1-4): ")
+        choice = input("\nEnter your choice (1-7): ")
 
         if choice == "1":
             show_all_data()
@@ -155,6 +235,12 @@ def main_menu():
         elif choice == "3":
             delete_recipe()
         elif choice == "4":
+            show_categories()
+        elif choice == "5":
+            show_ingredients()
+        elif choice == "6":
+            add_category()
+        elif choice == "7":
             print("Exiting program. Goodbye!")
             break
         else:
